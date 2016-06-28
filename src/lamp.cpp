@@ -8,6 +8,7 @@
 
 #include "mp.h"
 #include <iostream>
+#include <opencv2/core/core_c.h>
 
 using cv::Mat;
 
