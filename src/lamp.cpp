@@ -2,35 +2,49 @@
  * @file lamp.cpp
  * @author Guilherme G. Schardong [gschardong@inf.puc-rio.br]
  * @date 26/06/2016
- * @brief Implementation of the Local Affine Multidimensional Projection (LAMP) algorithm.
- * ref: http://ieeexplore.ieee.org/xpl/articleDetails.jsp?reload=true&arnumber=6065024
+ * @brief Implementation of the Local Affine Multidimensional Projection (LAMP)
+ * algorithm.
+ * ref:
+ * http://ieeexplore.ieee.org/xpl/articleDetails.jsp?reload=true&arnumber=6065024
  */
 
 #include "mp.h"
+#include <cstdio>
 #include <iostream>
 #include <opencv2/core/core_c.h>
 
 using cv::Mat;
 
-static bool s_CheckInputErrorsLAMP(const Mat& X, const std::vector<int> cp_index, const Mat& Ys)
+static bool s_CheckInputErrorsLAMP(const Mat& X,
+                                   const std::vector<int> cp_index,
+                                   const Mat& Ys)
 {
   if (X.rows < 3) {
-    fprintf(stderr, "ERROR: s_CheckInputErrorsLAMP - Input matrix too small to execute the projection [%d, %d]\n", X.rows, X.cols);
+    fprintf(stderr, "ERROR: s_CheckInputErrorsLAMP - Input matrix too small to "
+                    "execute the projection [%d, %d]\n",
+            X.rows, X.cols);
     return false;
   }
 
   if (cp_index.size() <= 1) {
-    fprintf(stderr, "ERROR: s_CheckInputErrorsLAMP - To few control points. Must have at least 2.\n");
+    fprintf(stderr, "ERROR: s_CheckInputErrorsLAMP - To few control points. "
+                    "Must have at least 2.\n");
     return false;
   }
 
-  if (Ys.rows != cp_index.size()) {
-    fprintf(stderr, "ERROR: s_CheckInputErrorsLAMP - Number of control points and number of control points' projections is different. %d control points given and %d samples provided.\n", cp_index.size(), Ys.rows);
+  if (Ys.rows != static_cast<int>(cp_index.size())) {
+    fprintf(stderr, "ERROR: s_CheckInputErrorsLAMP - Number of control points "
+                    "and number of control points' projections is different. "
+                    "%ld control points given and %d samples provided.\n",
+            cp_index.size(), Ys.rows);
     return false;
   }
 
   if (X.cols < Ys.cols) {
-    fprintf(stderr, "ERROR: s_CheckInputErrorsLAMP - Projections have more dimensions than original data. Original data has %d dimensions and projection data has %d dimensions.\n", X.cols, Ys.cols);
+    fprintf(stderr, "ERROR: s_CheckInputErrorsLAMP - Projections have more "
+                    "dimensions than original data. Original data has %d "
+                    "dimensions and projection data has %d dimensions.\n",
+            X.cols, Ys.cols);
     return false;
   }
 
@@ -45,7 +59,7 @@ Mat lamp(const Mat& X, const std::vector<int> cp_index, const Mat& Ys)
   }
 
   double tol = 1E-003;
-  
+
   // Building an array with the indices of the points to be projected.
   std::vector<int> proj_idx(X.rows);
   for (int i = 0; i < X.rows; ++i)
@@ -67,8 +81,9 @@ Mat lamp(const Mat& X, const std::vector<int> cp_index, const Mat& Ys)
       continue;
 
     // Building the weights of each control point over the current point.
-    for (int j = 0; j < cp_index.size(); ++j)
-      alpha.at<float>(0, j) = 1 / cv::max(cv::norm(Xs.row(j), X.row(proj_idx[i])), tol);
+    for (int j = 0; j < static_cast<int>(cp_index.size()); ++j)
+      alpha.at<float>(0, j) =
+          1 / cv::max(cv::norm(Xs.row(j), X.row(proj_idx[i])), tol);
 
     float sum_alpha = cv::sum(alpha)[0];
 
@@ -98,7 +113,8 @@ Mat lamp(const Mat& X, const std::vector<int> cp_index, const Mat& Ys)
     for (int k = 0; k < Ys.rows; ++k)
       Yhat.row(k) = Ys.row(k) - Ytil;
 
-    // Building the A and B matrices (Eq. 6) and calculating the SVD of t(A) * B.
+    // Building the A and B matrices (Eq. 6) and calculating the SVD of t(A) *
+    // B.
     Mat sqrt_alpha;
     cv::sqrt(alpha, sqrt_alpha);
     sqrt_alpha = sqrt_alpha.t();
@@ -122,5 +138,6 @@ Mat lamp(const Mat& X, const std::vector<int> cp_index, const Mat& Ys)
     Y.row(proj_idx[i]) = (X.row(proj_idx[i]) - Xtil) * M + Ytil;
   }
 
+std::cout << Y << std::endl;
   return Y;
 }
